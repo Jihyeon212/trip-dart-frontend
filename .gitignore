@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+*.local
+
+# 제공 원본 장소 데이터는 백엔드에서 관리하며 프론트엔드 저장소에 포함하지 않습니다.
+src/assets/data/*.json
+!src/assets/data/.gitkeep
