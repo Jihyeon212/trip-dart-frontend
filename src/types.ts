@@ -62,7 +62,7 @@ export interface GeneratedReport {
       summary: string
       recommendedCategories: Category[]
     }
-  }
+  } | null
 }
 
 export type PostType = 'random_course' | 'travel_review' | 'local_info'

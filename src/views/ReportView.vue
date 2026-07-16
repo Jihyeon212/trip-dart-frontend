@@ -66,7 +66,7 @@ async function generate() {
         </li>
       </ol>
       <blockquote v-if="state.generatedReport.overallReview">{{ state.generatedReport.overallReview }}</blockquote>
-      <section class="ai-insights">
+      <section v-if="state.generatedReport.aiInsights" class="ai-insights">
         <span class="ai-insights-label">AI TRAVEL INSIGHTS</span>
         <h2>{{ state.generatedReport.aiInsights.travelStyle.title }}</h2>
         <p>{{ state.generatedReport.aiInsights.travelStyle.description }}</p>
