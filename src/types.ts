@@ -65,6 +65,15 @@ export interface GeneratedReport {
   } | null
 }
 
+export interface SharedReportData {
+  data_type: 'generated_report'
+  version: 1
+  report: GeneratedReport
+  locations: Location[]
+}
+
+export type PostRouteData = Array<Location | SharedReportData>
+
 export type PostType = 'random_course' | 'travel_review' | 'local_info'
 export interface Post {
   id: number
@@ -72,11 +81,11 @@ export interface Post {
   title: string
   content: string
   nickname: string
-  route_data?: Location[] | string | null
+  route_data?: PostRouteData | string | null
   created_at: string
   updated_at?: string
 }
-export interface PostPayload { post_type: PostType; title: string; content: string; nickname: string; password: string; route_data?: Location[] | null }
+export interface PostPayload { post_type: PostType; title: string; content: string; nickname: string; password: string; route_data?: PostRouteData | null }
 export interface PaginatedPosts { items: Post[]; total: number; page: number; size: number; total_pages: number }
 
 export interface ChatMessage { id: string; role: 'user' | 'assistant'; content: string; locations?: Location[] }

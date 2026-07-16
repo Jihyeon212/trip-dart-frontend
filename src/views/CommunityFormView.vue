@@ -19,6 +19,7 @@ function fillRoute() {
   } else if (route.query.source === 'report' && state.generatedReport) {
     const report = state.generatedReport; form.post_type = 'travel_review'; form.title = report.title
     form.content = [report.summary, ...report.timeline.map((item) => `${item.time ? `${item.time} ` : ''}${item.place}${item.description ? ` — ${item.description}` : ''}`), report.overallReview].filter(Boolean).join('\n\n')
+    form.route_data = [{ data_type: 'generated_report', version: 1, report, locations: state.selectedLocations.filter((item) => state.visited[item.contentid]) }]
   }
 }
 function validate() {
@@ -41,7 +42,7 @@ onMounted(async () => {
   if (!editing.value) { fillRoute(); return }
   const password = sessionStorage.getItem(`post-edit-password:${id.value}`)
   if (!password) { router.replace(`/community/${id.value}`); return }
-  try { const post = await postsApi.detail(id.value); Object.assign(form, { post_type: post.post_type, title: post.title, content: post.content, nickname: post.nickname, password }) }
+  try { const post = await postsApi.detail(id.value); Object.assign(form, { post_type: post.post_type, title: post.title, content: post.content, nickname: post.nickname, password, route_data: post.route_data }) }
   catch (err) { pageError.value = err instanceof Error ? err.message : '게시글을 불러오지 못했습니다.' }
 })
 </script>
