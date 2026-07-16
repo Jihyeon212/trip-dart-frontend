@@ -20,8 +20,8 @@ async function send() {
   input.value = ''
   sending.value = true
   try {
-    const response = await chatApi.send(content, messages.value, state.selectedLocations)
-    messages.value.push({ id: crypto.randomUUID(), role: 'assistant', content: response.message || response.answer || '응답을 확인해주세요.', locations: response.locations?.slice(0, 3) })
+    const response = await chatApi.send(content, state.selectedLocations)
+    messages.value.push({ id: crypto.randomUUID(), role: 'assistant', content: response.answer, locations: response.locations.slice(0, 3) })
   } catch {
     const routeQuestion = /내 여행|코스|정해진 장소/.test(content)
     const locations = routeQuestion ? state.selectedLocations.slice(0, 3) : searchLocalLocations(content)

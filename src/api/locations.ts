@@ -2,87 +2,90 @@ import { request } from './http'
 import { CATEGORY_META } from '@/constants'
 import type { Category, Location, TransportMode } from '@/types'
 
-interface ApiLocation {
-  contentid?: string | number
-  content_id?: string | number
-  contenttypeid?: string | number
-  title?: string
-  category?: string
-  category_label?: string
-  addr1?: string
-  addr2?: string
-  address?: string
-  tel?: string
-  mapx?: string | number
-  mapy?: string | number
-  longitude?: string | number
-  latitude?: string | number
-  firstimage?: string
-  firstimage2?: string
-  image?: string
-  cpyrhtDivCd?: string
+export interface ApiLocation {
+  contentid: string
+  contenttypeid: string
+  category: string
+  category_name: string
+  title: string
+  addr1: string
+  addr2: string
+  tel: string
+  longitude: number
+  latitude: number
+  image_url: string
+  thumbnail_url: string
+  sigungucode: string
   distance_km?: number
-  applied_radius_km?: number | null
 }
 
-interface CandidateResponse { locations?: ApiLocation[] }
+interface CandidateResponse {
+  locations: ApiLocation[]
+  search_scope: 'radius' | 'all_gwangju'
+  applied_radius_km: number | null
+  radius_expanded: boolean
+  candidate_count: number
+  message: string | null
+}
+
 interface RandomResponse {
-  status?: 'selected' | 'skipped'
-  selected_location?: ApiLocation | null
-  location?: ApiLocation | null
-  applied_radius?: number | null
-  applied_radius_km?: number | null
-  radius_expanded?: boolean
-  expanded?: boolean
-  message?: string
+  status: 'selected' | 'skipped'
+  selected_location: ApiLocation | null
+  search_scope: 'radius' | 'all_gwangju'
+  applied_radius_km: number | null
+  radius_expanded: boolean
+  candidate_count: number
+  message: string
 }
 
-function normalize(raw: ApiLocation, category: Category): Location {
+export function normalizeLocation(raw: ApiLocation): Location {
+  const category = raw.category as Category
   return {
-    contentid: String(raw.contentid ?? raw.content_id ?? ''),
-    contenttypeid: String(raw.contenttypeid ?? CATEGORY_META[category].contentTypeId),
-    title: raw.title || '',
+    contentid: raw.contentid,
+    contenttypeid: raw.contenttypeid,
+    title: raw.title,
     category,
-    categoryLabel: raw.category_label || CATEGORY_META[category].label,
-    address: raw.address || [raw.addr1, raw.addr2].filter(Boolean).join(' '),
-    tel: raw.tel || '',
-    longitude: Number(raw.longitude ?? raw.mapx),
-    latitude: Number(raw.latitude ?? raw.mapy),
-    image: raw.image || raw.firstimage2 || raw.firstimage || '',
-    copyrightType: raw.cpyrhtDivCd || '',
+    categoryLabel: raw.category_name || CATEGORY_META[category]?.label || raw.category,
+    address: [raw.addr1, raw.addr2].filter(Boolean).join(' '),
+    tel: raw.tel,
+    longitude: raw.longitude,
+    latitude: raw.latitude,
+    image: raw.image_url || raw.thumbnail_url,
+    copyrightType: '',
     distanceKm: raw.distance_km,
-    appliedRadiusKm: raw.applied_radius_km,
   }
 }
 
-function centerQuery(center: Location | null) {
-  return center ? `&center_latitude=${center.latitude}&center_longitude=${center.longitude}` : ''
+function tripRequest(category: Category, transportMode: TransportMode, center: Location | null, excludedIds: string[]) {
+  return {
+    category,
+    transport_mode: transportMode,
+    center: center ? { latitude: center.latitude, longitude: center.longitude } : null,
+    excluded_content_ids: excludedIds,
+  }
 }
 
 export const locationsApi = {
   async candidates(category: Category, transportMode: TransportMode, center: Location | null, excludedIds: string[]) {
-    const query = `/api/locations?category=${category}&transport_mode=${transportMode}${centerQuery(center)}&excluded_content_ids=${encodeURIComponent(excludedIds.join(','))}`
-    const response = await request<CandidateResponse | ApiLocation[]>(query)
-    const items = Array.isArray(response) ? response : response.locations || []
-    return items.map((item) => normalize(item, category)).filter((item) => item.contentid && item.title && Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+    const response = await request<CandidateResponse>('/api/trips/candidates', {
+      method: 'POST',
+      body: JSON.stringify(tripRequest(category, transportMode, center, excludedIds)),
+    })
+    return response.locations.map(normalizeLocation)
   },
+
   async random(category: Category, transportMode: TransportMode, center: Location | null, excludedIds: string[]) {
     const response = await request<RandomResponse>('/api/trips/random-location', {
       method: 'POST',
-      body: JSON.stringify({
-        category,
-        transport_mode: transportMode,
-        center_latitude: center?.latitude ?? null,
-        center_longitude: center?.longitude ?? null,
-        excluded_content_ids: excludedIds,
-      }),
+      body: JSON.stringify(tripRequest(category, transportMode, center, excludedIds)),
     })
-    const raw = response.selected_location ?? response.location ?? null
-    const radius = response.applied_radius_km ?? response.applied_radius ?? null
+    const radius = response.applied_radius_km
     return {
-      selected: raw ? { ...normalize(raw, category), appliedRadiusKm: radius } : null,
+      selected: response.selected_location
+        ? { ...normalizeLocation(response.selected_location), appliedRadiusKm: radius }
+        : null,
       radius,
-      expanded: response.radius_expanded ?? response.expanded ?? false,
+      expanded: response.radius_expanded,
       message: response.message,
     }
   },
