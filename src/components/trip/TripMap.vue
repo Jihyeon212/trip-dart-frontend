@@ -21,6 +21,18 @@ function draw() {
   if (!map) return
   layer?.clearLayers()
   const markers: L.Marker[] = []
+  if (props.selected.length >= 2) {
+    L.polyline(
+      props.selected.map((item) => [item.latitude, item.longitude] as L.LatLngTuple),
+      {
+        color: '#0f766e',
+        weight: 4,
+        opacity: 0.85,
+        lineCap: 'round',
+        lineJoin: 'round',
+      },
+    ).addTo(layer!)
+  }
   props.candidates.forEach((item) => {
     const marker = L.marker([item.latitude, item.longitude], { icon: candidateIcon(item) }).on('click', () => emit('select', item))
     marker.bindTooltip(item.title, { direction: 'top' })
