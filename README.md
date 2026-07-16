@@ -1,6 +1,8 @@
 # 광주 다트립 프론트엔드
 
-Vue 3 + Vite + TypeScript 기반 SPA입니다. 장소 랜덤 선택은 현재 저장소의 제공 JSON으로 동작하며, 게시판·챗봇·AI 리포트는 `VITE_API_BASE_URL`의 FastAPI 서버를 우선 호출합니다. 챗봇과 리포트는 백엔드 연결 전에도 제공 데이터와 사용자 입력만으로 제한된 대체 결과를 제공합니다.
+Vue 3 + Vite + TypeScript 기반 SPA입니다. 장소·게시판·챗봇·AI 리포트는 `VITE_API_BASE_URL`의 FastAPI 서버를 호출합니다. 제공 원본 JSON은 프론트엔드 저장소에 커밋하지 않으며 백엔드에서 관리합니다.
+
+로컬 개발 중 `src/assets/data`에 제공 JSON이 존재하면, 백엔드 미연결 시에만 장소·챗봇의 선택적 fallback으로 사용합니다. 해당 JSON은 `.gitignore`로 제외되며 파일이 없어도 프론트엔드 빌드는 성공합니다.
 
 ## 실행
 
@@ -21,6 +23,8 @@ npm run dev
 - `DELETE /api/posts/{id}` — 본문 `{ "password": "1234" }`
 - `POST /api/chat`
 - `POST /api/reports/generate`
+- `GET /api/locations`
+- `POST /api/trips/random-location`
 
 게시판 목록은 `{ items, total, page, size, total_pages }`를 기준으로 하며 단순 배열 응답도 처리합니다. 백엔드 계약 확정 시 `src/api` 계층만 조정하면 화면 코드는 유지됩니다.
 
