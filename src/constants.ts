@@ -9,5 +9,5 @@ export const CATEGORY_META: Record<Category, { label: string; icon: string; colo
 }
 export const CATEGORIES = Object.keys(CATEGORY_META) as Category[]
 export const POST_TYPE_LABELS: Record<PostType, string> = { random_course: '랜덤 코스', travel_review: '여행 후기', local_info: '지역 정보' }
-export const STORAGE_KEY = 'gwangju-random-trip-v1'
+export const STORAGE_KEY = 'gwangju-random-trip-v2'
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')

@@ -42,6 +42,27 @@ export interface GeneratedReport {
   summary: string
   timeline: Array<{ time?: string; place: string; rating?: number; description?: string }>
   overallReview?: string
+  aiInsights: {
+    travelStyle: {
+      title: string
+      description: string
+    }
+    keywords: string[]
+    satisfactionPoints: Array<{
+      title: string
+      description: string
+      evidence: string[]
+    }>
+    disappointmentPoints: Array<{
+      title: string
+      description: string
+      evidence: string[]
+    }>
+    nextTripSuggestion: {
+      summary: string
+      recommendedCategories: Category[]
+    }
+  }
 }
 
 export type PostType = 'random_course' | 'travel_review' | 'local_info'

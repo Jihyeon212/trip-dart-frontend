@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { reportsApi } from '@/api/reports'
+import { CATEGORY_META } from '@/constants'
 import { useTrip } from '@/composables/useTrip'
 import type { GeneratedReport, LocationReview, ReportInputs } from '@/types'
 
@@ -15,7 +16,25 @@ function setOverall(rating: number) { inputs.overallRating = inputs.overallRatin
 function persist() { state.reportInputs = JSON.parse(JSON.stringify(inputs)) as ReportInputs; saveReport() }
 function localReport(): GeneratedReport {
   const timeline = visited.value.map((place) => { const item = review(place.contentid); return { time: item.visitTime || undefined, place: place.title, rating: item.rating, description: item.review?.trim() || undefined } })
-  return { title: '다트가 정해준 광주의 하루', summary: `${visited.value.map((item) => item.title).join(', ')}을(를) 방문한 광주 여행 기록입니다.`, timeline, overallReview: inputs.overallReview?.trim() || inputs.additionalNotes?.trim() || undefined }
+  return {
+    title: '다트가 정해준 광주의 하루',
+    summary: `${visited.value.map((item) => item.title).join(', ')}을(를) 방문한 광주 여행 기록입니다.`,
+    timeline,
+    overallReview: inputs.overallReview?.trim() || inputs.additionalNotes?.trim() || undefined,
+    aiInsights: {
+      travelStyle: {
+        title: 'AI 분석 결과 없음',
+        description: 'AI 리포트 결과가 없어 입력한 여행 기록으로 기본 리포트를 생성했습니다.',
+      },
+      keywords: [],
+      satisfactionPoints: [],
+      disappointmentPoints: [],
+      nextTripSuggestion: {
+        summary: 'AI 리포트 결과가 없어 다음 여행 추천을 제공할 수 없습니다.',
+        recommendedCategories: [],
+      },
+    },
+  }
 }
 async function generate() {
   if (!visited.value.length) { error.value = '방문한 장소를 하나 이상 체크한 후 여행 리포트를 만들어주세요.'; return }
@@ -36,6 +55,45 @@ async function generate() {
         <p v-if="error" class="form-error callout">{{ error }}</p><button class="button accent large report-submit" type="submit" :disabled="loading">{{ loading ? '여행 리포트 생성 중…' : '여행 리포트 만들기' }}</button>
       </form>
     </template>
-    <article v-else class="generated-report"><div class="report-ticket-head"><span>GWANGJU TRIP REPORT</span><small>BY DART · BY CHANCE</small></div><h1>{{ state.generatedReport.title }}</h1><p class="report-summary">{{ state.generatedReport.summary }}</p><ol class="timeline"><li v-for="(item, index) in state.generatedReport.timeline" :key="`${item.place}-${index}`"><div class="timeline-marker">{{ String(index + 1).padStart(2, '0') }}</div><div><time v-if="item.time">{{ item.time }}</time><h2>{{ item.place }}</h2><p v-if="item.rating" class="report-rating">{{ '★'.repeat(item.rating) }}{{ '☆'.repeat(5 - item.rating) }}</p><p v-if="item.description">{{ item.description }}</p></div></li></ol><blockquote v-if="state.generatedReport.overallReview">{{ state.generatedReport.overallReview }}</blockquote><div class="report-actions"><button class="button secondary" type="button" @click="state.generatedReport = null; saveReport()">리포트 입력 수정하기</button><RouterLink to="/community/new?source=report" class="button primary">커뮤니티에 공유하기</RouterLink><button class="button ghost" type="button" @click="router.push('/trip')">여행 코스로 돌아가기</button></div></article>
+    <article v-else class="generated-report">
+      <div class="report-ticket-head"><span>GWANGJU TRIP REPORT</span><small>BY DART · BY CHANCE</small></div>
+      <h1>{{ state.generatedReport.title }}</h1>
+      <p class="report-summary">{{ state.generatedReport.summary }}</p>
+      <ol class="timeline">
+        <li v-for="(item, index) in state.generatedReport.timeline" :key="`${item.place}-${index}`">
+          <div class="timeline-marker">{{ String(index + 1).padStart(2, '0') }}</div>
+          <div><time v-if="item.time">{{ item.time }}</time><h2>{{ item.place }}</h2><p v-if="item.rating" class="report-rating">{{ '★'.repeat(item.rating) }}{{ '☆'.repeat(5 - item.rating) }}</p><p v-if="item.description">{{ item.description }}</p></div>
+        </li>
+      </ol>
+      <blockquote v-if="state.generatedReport.overallReview">{{ state.generatedReport.overallReview }}</blockquote>
+      <section class="ai-insights">
+        <span class="ai-insights-label">AI TRAVEL INSIGHTS</span>
+        <h2>{{ state.generatedReport.aiInsights.travelStyle.title }}</h2>
+        <p>{{ state.generatedReport.aiInsights.travelStyle.description }}</p>
+        <ul class="insight-keywords">
+          <li v-for="keyword in state.generatedReport.aiInsights.keywords" :key="keyword">#{{ keyword }}</li>
+        </ul>
+        <div v-if="state.generatedReport.aiInsights.satisfactionPoints.length" class="insight-group">
+          <h3>만족했던 점</h3>
+          <article v-for="point in state.generatedReport.aiInsights.satisfactionPoints" :key="point.title">
+            <strong>{{ point.title }}</strong><p>{{ point.description }}</p>
+            <small v-for="evidence in point.evidence" :key="evidence">“{{ evidence }}”</small>
+          </article>
+        </div>
+        <div v-if="state.generatedReport.aiInsights.disappointmentPoints.length" class="insight-group">
+          <h3>아쉬웠던 점</h3>
+          <article v-for="point in state.generatedReport.aiInsights.disappointmentPoints" :key="point.title">
+            <strong>{{ point.title }}</strong><p>{{ point.description }}</p>
+            <small v-for="evidence in point.evidence" :key="evidence">“{{ evidence }}”</small>
+          </article>
+        </div>
+        <div class="next-trip-suggestion">
+          <h3>다음 여행 추천</h3>
+          <p>{{ state.generatedReport.aiInsights.nextTripSuggestion.summary }}</p>
+          <div><span v-for="category in state.generatedReport.aiInsights.nextTripSuggestion.recommendedCategories" :key="category">{{ CATEGORY_META[category]?.label || category }}</span></div>
+        </div>
+      </section>
+      <div class="report-actions"><button class="button secondary" type="button" @click="state.generatedReport = null; saveReport()">리포트 입력 수정하기</button><RouterLink to="/community/new?source=report" class="button primary">커뮤니티에 공유하기</RouterLink><button class="button ghost" type="button" @click="router.push('/trip')">여행 코스로 돌아가기</button></div>
+    </article>
   </div>
 </template>
